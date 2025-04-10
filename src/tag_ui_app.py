@@ -11,11 +11,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from hmm import HMM_Tagger
 
-# 🩹 Patch to prevent Streamlit+PyTorch reload crash
+# 🩹 Patch for PyTorch/Streamlit compatibility
 if not hasattr(torch.classes, '__path__'):
     torch.classes.__path__ = types.SimpleNamespace(_path=[])
 
-# ========= MODEL CLASSES =========
+# ========= MODEL CLASS =========
 class MiniTagTransformer(nn.Module):
     def __init__(self, num_tags):
         super().__init__()
@@ -84,14 +84,18 @@ def predict_bert(text, model, tokenizer, mlb, threshold=0.05, show_top_k=5, fall
 
 # ========= STREAMLIT UI =========
 st.set_page_config(page_title="StackOverflow Tag Generator", layout="wide")
-
 st.title("🚀 StackOverflow Tag Generator")
 
+# Initialize session state
+if "model_selected" not in st.session_state:
+    st.session_state.model_selected = None
+
+# Model Selection
 model_choice = st.selectbox("📊 Choose a Tag Prediction Model", [
     "Logistic Regression (ML)",
     "Hidden Markov Model (HMM)",
     "DistilBERT Transformer"
-])
+], index=0)
 
 if st.button("✅ Select Model"):
     st.session_state.model_selected = model_choice
@@ -102,7 +106,8 @@ if st.button("✅ Select Model"):
     elif model_choice == "DistilBERT Transformer":
         st.session_state.bert_model, st.session_state.mlb_bert, st.session_state.tokenizer = load_bert()
 
-if "model_selected" in st.session_state:
+# Input Section
+if st.session_state.model_selected:
     st.subheader(f"📝 Enter Question for {st.session_state.model_selected}")
     title = st.text_input("📌 Title", placeholder="e.g., How to merge dictionaries in Python?")
     description = st.text_area("🧐 Description", height=200, placeholder="Include details, errors, etc.")
@@ -126,7 +131,7 @@ if "model_selected" in st.session_state:
                     for tag, score in results[:10]:
                         st.write(f"**{tag}**: {score:.3f}")
 
-                else:
+                elif st.session_state.model_selected == "DistilBERT Transformer":
                     tags, scores = predict_bert(
                         f"{title} {description}",
                         st.session_state.bert_model,
@@ -139,5 +144,6 @@ if "model_selected" in st.session_state:
                     for tag, prob in scores:
                         st.write(f"**{tag}**: {prob:.3f}")
 
+# Footer
 st.markdown("---")
 st.caption("Built with ❤️ using Streamlit, Transformers, and scikit-learn")
