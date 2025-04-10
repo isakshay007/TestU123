@@ -146,4 +146,4 @@ if st.session_state.model_selected:
 
 # Footer
 st.markdown("---")
-st.caption("Built waith ❤️ using Streamlit, Transformers, and scikit-learn")
+st.caption("Built waith  using Streamlit, Transformers, and scikit-learn")
